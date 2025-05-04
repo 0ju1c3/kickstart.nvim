@@ -89,6 +89,10 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+vim.keymap.set('n', '<leader>pv', vim.cmd.Ex)
+--NOTE: Hightlight move
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -121,6 +125,18 @@ end)
 -- Enable break indent
 vim.opt.breakindent = true
 
+-- Filetype-specific settings
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
+  callback = function()
+    -- Set tab width to 2 for these filetypes
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.tabstop = 2
+    vim.opt_local.softtabstop = 2
+    -- Additional settings as needed
+  end,
+})
+
 -- Save undo history
 vim.opt.undofile = true
 
@@ -132,7 +148,7 @@ vim.opt.smartcase = true
 vim.opt.signcolumn = 'yes'
 
 -- Decrease update time
-vim.opt.updatetime = 250
+vim.opt.updatetime = 500
 
 -- Decrease mapped sequence wait time
 vim.opt.timeoutlen = 300
@@ -152,6 +168,7 @@ vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
 vim.opt.cursorline = true
+vim.opt.guicursor = ''
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
@@ -673,7 +690,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
 
         lua_ls = {
@@ -727,7 +744,84 @@ require('lazy').setup({
       }
     end,
   },
-
+  -- { --eslint integration
+  --   'mfussenegger/nvim-lint',
+  --   event = { 'BufReadPre', 'BufNewFile' },
+  --   config = function()
+  --     require('lint').linters_by_ft = {
+  --       javascript = { 'eslint' },
+  --       typescript = { 'eslint' },
+  --       javascriptreact = { 'eslint' },
+  --       typescriptreact = { 'eslint' },
+  --     }
+  --     vim.api.nvim_create_autocmd({ 'BufWritePost' }, {
+  --       callback = function()
+  --         require('lint').try_lint()
+  --       end,
+  --     })
+  --   end,
+  -- },
+  -- { --emmet support for html/css coding
+  --   'mattn/emmet-vim',
+  --   ft = {
+  --     'html',
+  --     'css',
+  --     'javascript',
+  --     'typescript',
+  --     'javascriptreact',
+  --     'typescriptreact',
+  --   },
+  -- },
+  -- { --auto pairs for brackets/quotes
+  --   'windwp/nvim-autopairs',
+  --   event = 'InsertEnter',
+  --   config = function()
+  --     require('nvim-autopairs').setup {
+  --       check_ts = true,
+  --       ts_config = {
+  --         lua = { 'string' },
+  --         javascript = { 'template_string' },
+  --         typescript = { 'template_string' },
+  --       },
+  --     }
+  --     -- Make it work with completion
+  --     local cmp_autopairs = require 'nvim-autopairs.completion.cmp'
+  --     local cmp = require 'blink.cmp'
+  --     cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
+  --   end,
+  -- },
+  { -- auto tag closing for html/jsx
+    'windwp/nvim-ts-autotag',
+    dependencies = 'nvim-treesitter/nvim-treesitter',
+    ft = {
+      'html',
+      'javascript',
+      'typescript',
+      'javascriptreact',
+      'typescriptreact',
+      'svelte',
+      'vue',
+      'tsx',
+      'jsx',
+    },
+    config = function()
+      require('nvim-ts-autotag').setup()
+    end,
+  },
+  { -- css color highlighting
+    'norcalli/nvim-colorizer.lua',
+    ft = { 'html', 'css', 'javascript', 'typescript', 'typescriptreact', 'javascriptreact' },
+    config = function()
+      require('colorizer').setup {
+        'html',
+        'css',
+        'javascript',
+        'typescript',
+        'typescriptreact',
+        'javascriptreact',
+      }
+    end,
+  },
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -760,11 +854,14 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        -- Web development
+        typescript = { 'prettier' },
+        javascript = { 'prettier' },
+        typescriptreact = { 'prettier' },
+        javascriptreact = { 'prettier' },
+        html = { 'prettier' },
+        css = { 'prettier' },
+        json = { 'prettier' },
       },
     },
   },
@@ -806,33 +903,88 @@ require('lazy').setup({
     --- @type blink.cmp.Config
     opts = {
       keymap = {
-        -- 'default' (recommended) for mappings similar to built-in completions
-        --   <c-y> to accept ([y]es) the completion.
-        --    This will auto-import if your LSP supports it.
-        --    This will expand snippets if the LSP sent a snippet.
-        -- 'super-tab' for tab to accept
-        -- 'enter' for enter to accept
-        -- 'none' for no mappings
-        --
-        -- For an understanding of why the 'default' preset is recommended,
-        -- you will need to read `:help ins-completion`
-        --
-        -- No, but seriously. Please read `:help ins-completion`, it is really good!
-        --
-        -- All presets have the following mappings:
-        -- <tab>/<s-tab>: move to right/left of your snippet expansion
-        -- <c-space>: Open menu or open docs if already open
-        -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-        -- <c-e>: Hide menu
-        -- <c-k>: Toggle signature help
-        --
-        -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'default',
+        preset = 'none', -- Disable presets to set everything manually
 
-        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+        -- Navigation through completion items
+        ['<Tab>'] = { 'select_next', 'fallback' },
+        ['<S-Tab>'] = { 'select_prev', 'fallback' },
+
+        -- Accept completion
+        ['<C-y>'] = { 'accept' },
+
+        -- Show/hide completion menu
+        ['<C-Space>'] = { 'show' },
+        ['<C-e>'] = { 'hide' },
+
+        -- Documentation controls
+        ['<C-d>'] = { 'scroll_documentation_down' },
+        ['<C-u>'] = { 'scroll_documentation_up' },
+        ['<leader>h'] = { 'show_documentation' }, -- Added show_documentation
+        ['<leader>l'] = { 'hide_documentation' }, -- Added hide_documentation
+
+        -- Signature help
+        ['<C-k>'] = { 'show_signature' },
+
+        -- For snippet navigation after accepting
+        ['<C-f>'] = { 'snippet_forward' },
+        ['<C-b>'] = { 'snippet_backward' },
       },
-
+      -- keymap = {
+      --   -- 'default' (recommended) for mappings similar to built-in completions
+      --   --   <c-y> to accept ([y]es) the completion.
+      --   --    This will auto-import if your LSP supports it.
+      --   --    This will expand snippets if the LSP sent a snippet.
+      --   -- 'super-tab' for tab to accept
+      --   -- 'enter' for enter to accept
+      --   -- 'none' for no mappings
+      --   --
+      --   -- For an understanding of why the 'default' preset is recommended,
+      --   -- you will need to read `:help ins-completion`
+      --   --
+      --   -- No, but seriously. Please read `:help ins-completion`, it is really good!
+      --   --
+      --   -- All presets have the following mappings:
+      --   -- <tab>/<s-tab>: move to right/left of your snippet expansion
+      --   -- <c-space>: Open menu or open docs if already open
+      --   -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
+      --   -- <c-e>: Hide menu
+      --   -- <c-k>: Toggle signature help
+      --   --
+      --   -- See :h blink-cmp-config-keymap for defining your own keymap
+      --   preset = 'default',
+      --
+      --   -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
+      --   --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+      -- },
+      --
+      -- keymap = {
+      --   -- 'default' (recommended) for mappings similar to built-in completions
+      --   --   <c-y> to accept ([y]es) the completion.
+      --   --    This will auto-import if your LSP supports it.
+      --   --    This will expand snippets if the LSP sent a snippet.
+      --   -- 'super-tab' for tab to accept
+      --   -- 'enter' for enter to accept
+      --   -- 'none' for no mappings
+      --   --
+      --   -- For an understanding of why the 'default' preset is recommended,
+      --   -- you will need to read `:help ins-completion`
+      --   --
+      --   -- No, but seriously. Please read `:help ins-completion`, it is really good!
+      --   --
+      --   -- All presets have the following mappings:
+      --   -- <tab>/<s-tab>: move to right/left of your snippet expansion
+      --   -- <c-space>: Open menu or open docs if already open
+      --   -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
+      --   -- <c-e>: Hide menu
+      --   -- <c-k>: Toggle signature help
+      --   --
+      --   -- See :h blink-cmp-config-keymap for defining your own keymap
+      --   preset = 'default',
+      --
+      --   -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
+      --   --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+      -- },
+      --
       appearance = {
         -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
         -- Adjusts spacing to ensure icons are aligned
@@ -875,18 +1027,35 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
+    init = function()
       require('tokyonight').setup {
+        -- use the night style
+        style = 'night',
+        transparent = true,
+        -- disable italic for functions
         styles = {
-          comments = { italic = false }, -- Disable italics in comments
+          functions = {},
         },
+        vim.api.nvim_set_hl(1, 'Normal', { bg = 'black' }),
+        vim.api.nvim_set_hl(1, 'NormalFloat', { bg = 'black' }),
+        sidebars = { 'qf', 'vista_kind', 'terminal', 'packer' },
+        -- Change the "hint" color to the "orange" color, and make the "error" color bright red
+        on_colors = function(colors)
+          colors.bg = '#000000'
+          colors.comment = '#7E8E91'
+        end,
       }
-
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+      -- vim.cmd.colorscheme("tokyonight-moon")
       vim.cmd.colorscheme 'tokyonight-night'
+      vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'black' })
+      -- vim.api.nvim_set_hl(0, "Normal", { bg = "black" })
+      -- vim.api.nvim_set_hl(0, "NormalFloat", { bg = "black" })
+      -- -- You can configure highlights by doing something like:
+      -- vim.cmd.hi("Comment gui=none")
     end,
   },
 
@@ -936,7 +1105,26 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'typescript',
+        'tsx',
+        'javascript',
+        'html',
+        'css',
+        'json',
+        -- Keep your existing parsers
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
