@@ -111,6 +111,9 @@ vim.opt.number = true
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
 
+-- Enable 24-bit RGB color in the terminal (needed for correct diff/syntax colors)
+vim.opt.termguicolors = true
+
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
@@ -167,7 +170,7 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
-vim.opt.cursorline = true
+vim.opt.cursorline = false
 vim.opt.guicursor = ''
 
 -- Minimal number of screen lines to keep above and below the cursor.
@@ -1019,46 +1022,6 @@ require('lazy').setup({
       signature = { enabled = true },
     },
   },
-
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
-      require('tokyonight').setup {
-        -- use the night style
-        style = 'night',
-        transparent = true,
-        -- disable italic for functions
-        styles = {
-          functions = {},
-        },
-        vim.api.nvim_set_hl(1, 'Normal', { bg = 'black' }),
-        vim.api.nvim_set_hl(1, 'NormalFloat', { bg = 'black' }),
-        sidebars = { 'qf', 'vista_kind', 'terminal', 'packer' },
-        -- Change the "hint" color to the "orange" color, and make the "error" color bright red
-        on_colors = function(colors)
-          colors.bg = '#000000'
-          colors.comment = '#7E8E91'
-        end,
-      }
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      -- vim.cmd.colorscheme("tokyonight-moon")
-      vim.cmd.colorscheme 'tokyonight-night'
-      vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
-      vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'black' })
-      -- vim.api.nvim_set_hl(0, "Normal", { bg = "black" })
-      -- vim.api.nvim_set_hl(0, "NormalFloat", { bg = "black" })
-      -- -- You can configure highlights by doing something like:
-      -- vim.cmd.hi("Comment gui=none")
-    end,
-  },
-
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
